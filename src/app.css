@@ -1,0 +1,883 @@
+/* ------------------------------------------------------------------ */
+/*  Fonts                                                              */
+/* ------------------------------------------------------------------ */
+
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("/fonts/Inter-Latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+		U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+		U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "Inter";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("/fonts/Inter-Cyrillic.woff2") format("woff2");
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+	font-family: "JetBrains Mono";
+	font-style: normal;
+	font-weight: 100 800;
+	font-display: swap;
+	src: url("/fonts/JetBrainsMono-Latin.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+		U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+		U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "JetBrains Mono";
+	font-style: normal;
+	font-weight: 100 800;
+	font-display: swap;
+	src: url("/fonts/JetBrainsMono-Cyrillic.woff2") format("woff2");
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+	font-family: "Book Antiqua";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/BookAntiqua.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Book Antiqua";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/BookAntiqua-Bold.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Book Antiqua";
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/BookAntiqua-Italic.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Book Antiqua";
+	font-style: italic;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/BookAntiqua-BoldItalic.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Nunito";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/Nunito-Regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Nunito";
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/Nunito-Italic.woff2") format("woff2");
+}
+@font-face {
+	font-family: "Roboto Slab";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/RobotoSlab-Regular.woff2") format("woff2");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tokens                                                             */
+/* ------------------------------------------------------------------ */
+
+:root {
+	--f-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+		Helvetica, Arial, sans-serif;
+	--f-body: "Nunito", "Inter", ui-sans-serif, system-ui, sans-serif;
+	--f-serif: "Book Antiqua", Georgia, "Times New Roman", serif;
+	--f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
+		"Liberation Mono", monospace;
+	--f-slab: "Roboto Slab", Georgia, serif;
+
+	--maxw: 1240px;
+	--maxw-wide: 1440px;
+	--gutter: clamp(18px, 4.2vw, 64px);
+	--section-y: clamp(5rem, 10vw, 9rem);
+	--radius: 0px;
+
+	--ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--dur-fast: 160ms;
+	--dur: 320ms;
+	--dur-slow: 700ms;
+	--cx-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* Blueprint — the technical first screen */
+:root[data-theme="light"] {
+	--bp-bg: #f1f2ee;
+	--bp-bg-deep: #e8eae4;
+	--bp-panel: rgba(255, 255, 255, 0.52);
+	--bp-ink: #101318;
+	--bp-muted: #5b6572;
+	--bp-line: rgba(16, 19, 24, 0.13);
+	--bp-line-strong: rgba(16, 19, 24, 0.32);
+	--bp-blue: #1d4fff;
+	--bp-blue-soft: rgba(29, 79, 255, 0.1);
+	--bp-blue-line: rgba(29, 79, 255, 0.28);
+	--bp-shadow: rgba(16, 19, 24, 0.12);
+
+	/* Codex — warm umber dark fantasy, even in the "light" theme.
+	   The light theme belongs to the blueprint lobby; the portal leads to
+	   the same dark world, only warmer. */
+	--cx-bg: #15100a;
+	--cx-bg-deep: #100c08;
+	--cx-panel: #211811;
+	--cx-panel-2: #2a1e14;
+	--cx-ink: #e7d7c0;
+	--cx-muted: #b6a28a;
+	--cx-faint: #8d7a63;
+	--cx-gold: #d8a05a;
+	--cx-gold-bright: #f1c98c;
+	--cx-gold-light: #f7d7a8;
+	--cx-line: rgba(216, 160, 90, 0.24);
+	--cx-line-strong: rgba(216, 160, 90, 0.55);
+	--cx-glow: rgba(216, 160, 90, 0.15);
+	--cx-shadow: rgba(0, 0, 0, 0.5);
+	--cx-paper-grid: rgba(216, 160, 90, 0.035);
+	--cx-vignette: rgba(0, 0, 0, 0.4);
+	--cx-selection-bg: #d8a05a;
+	--cx-selection-ink: #15100a;
+
+	--portal-bg: #090705;
+	--portal-gold: #e4b472;
+	--portal-gold-light: #ffc99d;
+	--portal-blue: #6d94ff;
+	--portal-ink: #f4ead9;
+}
+
+:root[data-theme="dark"] {
+	--bp-bg: #0a0e15;
+	--bp-bg-deep: #070a10;
+	--bp-panel: rgba(255, 255, 255, 0.035);
+	--bp-ink: #e7edf6;
+	--bp-muted: #8a97a9;
+	--bp-line: rgba(164, 190, 230, 0.14);
+	--bp-line-strong: rgba(164, 190, 230, 0.34);
+	--bp-blue: #6d94ff;
+	--bp-blue-soft: rgba(109, 148, 255, 0.12);
+	--bp-blue-line: rgba(109, 148, 255, 0.32);
+	--bp-shadow: rgba(0, 0, 0, 0.5);
+
+	/* Codex — Niheria dark */
+	--cx-bg: #0c0a08;
+	--cx-bg-deep: #090706;
+	--cx-panel: #14100c;
+	--cx-panel-2: #1a1510;
+	--cx-ink: #d8d0c5;
+	--cx-muted: #9b8f80;
+	--cx-faint: #8a7d6e;
+	--cx-gold: #e4b472;
+	--cx-gold-bright: #ffc99d;
+	--cx-gold-light: #f4d3a2;
+	--cx-line: rgba(228, 180, 114, 0.21);
+	--cx-line-strong: rgba(228, 180, 114, 0.54);
+	--cx-glow: rgba(228, 180, 114, 0.11);
+	--cx-shadow: rgba(0, 0, 0, 0.55);
+	--cx-paper-grid: rgba(228, 180, 114, 0.035);
+	--cx-vignette: rgba(0, 0, 0, 0.34);
+	--cx-selection-bg: #e4b472;
+	--cx-selection-ink: #0c0a08;
+
+	--portal-bg: #080604;
+	--portal-gold: #e4b472;
+	--portal-gold-light: #ffc99d;
+	--portal-blue: #6d94ff;
+	--portal-ink: #f4ead9;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+::selection {
+	color: var(--cx-selection-ink);
+	background: var(--cx-selection-bg);
+}
+
+html {
+	scroll-behavior: smooth;
+	overflow-x: clip;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	min-width: 320px;
+	overflow-x: clip;
+	font-family: var(--f-body);
+	font-size: 1.0625rem;
+	line-height: 1.65;
+	background: var(--cx-bg);
+	color: var(--cx-ink);
+	transition:
+		background-color var(--dur) var(--ease-out),
+		color var(--dur) var(--ease-out);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+body.menu-open {
+	overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+	font-family: var(--f-serif);
+	font-weight: 700;
+	line-height: 1.05;
+	letter-spacing: -0.015em;
+	color: var(--cx-gold);
+}
+
+p {
+	margin: 0 0 1.1em;
+}
+
+p:last-child {
+	margin-bottom: 0;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+	font: inherit;
+	color: inherit;
+}
+
+button {
+	padding: 0;
+	border: 0;
+	background: none;
+	cursor: pointer;
+}
+
+img,
+svg {
+	display: block;
+	max-width: 100%;
+}
+
+ul,
+ol {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+hr {
+	margin: 0;
+	border: 0;
+	border-top: 1px solid var(--cx-line);
+}
+
+:focus-visible {
+	outline: 2px solid var(--cx-gold-bright);
+	outline-offset: 4px;
+}
+
+#main:focus {
+	outline: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+	width: 11px;
+	height: 11px;
+}
+::-webkit-scrollbar-track {
+	background: var(--cx-bg-deep);
+}
+::-webkit-scrollbar-thumb {
+	background: var(--cx-gold);
+	border: 3px solid var(--cx-bg-deep);
+	background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: var(--cx-gold-bright);
+	border: 3px solid var(--cx-bg-deep);
+	background-clip: padding-box;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+.container {
+	width: min(100% - 2 * var(--gutter), var(--maxw));
+	margin-inline: auto;
+}
+
+.container-wide {
+	width: min(100% - 2 * var(--gutter), var(--maxw-wide));
+	margin-inline: auto;
+}
+
+.codex {
+	position: relative;
+	background: var(--cx-bg);
+}
+
+/* The lobby stage keeps the last light screen pinned while the portal opens.
+   On desktop the extra height is the transition runway; on small screens the
+   section simply scrolls and a short dark runway follows it. */
+.lobby-stage {
+	position: relative;
+	z-index: 0;
+}
+
+.portal-spacer {
+	display: none;
+	position: relative;
+	overflow: hidden;
+	height: 140svh;
+	background:
+		radial-gradient(ellipse 55% 46% at 50% 62%, rgba(228, 180, 114, 0.1), transparent 66%),
+		linear-gradient(180deg, #0f0b08 0%, #0c0906 48%, var(--portal-bg) 100%);
+	box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.68);
+}
+
+@media (min-width: 901px) and (min-height: 720px) {
+	.lobby-stage {
+		height: 250svh;
+	}
+}
+
+@media (max-width: 900px), (max-height: 719px) {
+	.portal-spacer {
+		display: block;
+	}
+}
+
+/* The light lobby is a real fish-eye lens: a radial SVG displacement filter
+   warps it with chromatic fringing while the veil closes over it. No circle,
+   no hard edge. */
+/* The lobby's own opacity is driven by the portal progress, so it stays
+   dissolved after the lens filter is switched off. */
+.web-contact {
+	opacity: clamp(0, calc((0.4 - var(--portal-p, 0)) / 0.1), 1);
+}
+
+.hero {
+	opacity: clamp(0, calc((0.46 - var(--portal-p, 0)) / 0.25), 1);
+	transform: scale(calc(1 + clamp(0, calc((0.46 - var(--portal-p, 0)) / 0.25), 1) * 0.02));
+}
+
+html.portal-active .web-contact {
+	pointer-events: none;
+}
+
+html.portal-lensing .web-contact {
+	filter: url(#portal-fisheye);
+}
+
+html.portal-hero-lens .hero {
+	filter: url(#portal-fisheye);
+}
+
+html.portal-emerging .about .section-head {
+	filter: url(#portal-fisheye);
+	will-change: filter;
+}
+
+/* The codex's first screen is held in its final position while the portal
+   reveals it; only its opacity and the lens change. */
+.about {
+	opacity: clamp(0, calc((var(--portal-p, 0) - 0.6) / 0.12), 1);
+}
+
+html.portal-revealing .about {
+	opacity: var(--reveal, 1);
+	transform: translate3d(0, var(--about-shift, 0px), 0);
+	will-change: transform, opacity;
+}
+
+html.portal-lensing .web-contact .container {
+	transform: scale(calc(1 + clamp(0, calc((var(--portal-p, 0) - 0.1) / 0.3), 1) * 0.04));
+	transform-origin: 50% 50%;
+}
+
+@media (max-width: 900px) {
+	/* The unpinned lobby sheet dissolves instead of ending in a hard edge. */
+	html.portal-lensing .web-contact {
+		-webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+		mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
+		filter: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lobby-stage {
+		height: auto;
+	}
+
+	.portal-spacer {
+		display: none;
+	}
+
+	.web-contact,
+	.hero,
+	.about {
+		opacity: 1;
+		transform: none;
+		pointer-events: auto;
+	}
+
+	html.portal-lensing .web-contact,
+	html.portal-hero-lens .hero,
+	html.portal-lensing .web-contact .container,
+	html.portal-emerging .about .section-head {
+		filter: none;
+		opacity: 1;
+		transform: none;
+		mask-image: none;
+		-webkit-mask-image: none;
+		pointer-events: auto;
+	}
+}
+
+/* The codex assembles when the portal has opened. */
+.codex.is-assembling .about .section-head {
+	animation: codex-assemble 850ms var(--ease-out) both;
+}
+
+.codex.is-assembling .about-portrait {
+	animation: codex-assemble-left 950ms 70ms var(--ease-out) both;
+}
+
+.codex.is-assembling .about-copy {
+	animation: codex-assemble-right 950ms 140ms var(--ease-out) both;
+}
+
+.codex.is-assembling .facts {
+	animation: codex-assemble 850ms 220ms var(--ease-out) both;
+}
+
+.codex.is-assembling .principles {
+	animation: codex-assemble 850ms 300ms var(--ease-out) both;
+}
+
+@keyframes codex-assemble {
+	from {
+		opacity: 0;
+		transform: translateY(26px) scale(0.985);
+		filter: blur(6px);
+		clip-path: inset(0 0 100% 0);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+		filter: none;
+		clip-path: inset(0);
+	}
+}
+
+@keyframes codex-assemble-left {
+	from {
+		opacity: 0;
+		transform: translateX(-26px) rotate(-1deg);
+		filter: blur(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+		filter: none;
+	}
+}
+
+@keyframes codex-assemble-right {
+	from {
+		opacity: 0;
+		transform: translateX(26px);
+		filter: blur(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+		filter: none;
+	}
+}
+
+.narrow {
+	max-width: 54rem;
+}
+
+.mono {
+	font-family: var(--f-mono);
+	font-size: 0.76rem;
+	font-weight: 400;
+	line-height: 1.5;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.serif {
+	font-family: var(--f-serif);
+}
+
+.muted {
+	color: var(--cx-muted);
+}
+
+.gold {
+	color: var(--cx-gold);
+}
+
+.sr-only {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.skip-link {
+	position: fixed;
+	top: 0.8rem;
+	left: 0.8rem;
+	z-index: 300;
+	padding: 0.7rem 1rem;
+	border: 1px solid var(--bp-blue);
+	background: var(--bp-bg);
+	color: var(--bp-ink);
+	font-family: var(--f-mono);
+	font-size: 0.7rem;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	transform: translateY(-180%);
+	transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.skip-link:focus {
+	transform: translateY(0);
+}
+
+/* Buttons */
+.btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.6rem;
+	min-height: 2.9rem;
+	padding: 0.75rem 1.15rem;
+	border: 1px solid transparent;
+	border-radius: 0;
+	font-family: var(--f-mono);
+	font-size: 0.72rem;
+	font-weight: 500;
+	line-height: 1;
+	letter-spacing: 0.11em;
+	text-transform: uppercase;
+	transition:
+		background-color var(--dur-fast) var(--ease-out),
+		color var(--dur-fast) var(--ease-out),
+		border-color var(--dur-fast) var(--ease-out),
+		transform var(--dur-fast) var(--ease-out),
+		box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.btn:hover {
+	transform: translateY(-1px);
+}
+
+.btn:active {
+	transform: translateY(0);
+}
+
+.btn-blue {
+	border-color: var(--bp-blue);
+	background: var(--bp-blue);
+	color: #fff;
+}
+
+.btn-blue:hover {
+	box-shadow: 0 8px 26px rgba(29, 79, 255, 0.28);
+}
+
+.btn-ghost {
+	border-color: var(--bp-line-strong);
+	color: var(--bp-ink);
+}
+
+.btn-ghost:hover {
+	border-color: var(--bp-blue);
+	color: var(--bp-blue);
+}
+
+.btn-gold {
+	border-color: var(--cx-gold);
+	background: var(--cx-gold);
+	color: var(--cx-bg);
+}
+
+.btn-gold:hover {
+	background: var(--cx-gold-bright);
+	border-color: var(--cx-gold-bright);
+	box-shadow: 0 10px 30px var(--cx-glow);
+}
+
+.btn-outline {
+	border-color: var(--cx-line-strong);
+	color: var(--cx-gold);
+}
+
+.btn-outline:hover {
+	border-color: var(--cx-gold);
+	background: var(--cx-glow);
+}
+
+.btn-icon {
+	width: 2.9rem;
+	padding: 0;
+}
+
+/* Tags */
+.tag {
+	display: inline-flex;
+	align-items: center;
+	min-height: 1.6rem;
+	padding: 0.18rem 0.45rem;
+	border: 1px solid var(--cx-line);
+	font-family: var(--f-mono);
+	font-size: 0.66rem;
+	line-height: 1.2;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: var(--cx-muted);
+	white-space: nowrap;
+}
+
+.tag-gold {
+	border-color: var(--cx-line-strong);
+	color: var(--cx-gold);
+}
+
+/* Shared section rhythm */
+.section {
+	position: relative;
+	padding-block: var(--section-y);
+	scroll-margin-top: 5rem;
+	box-shadow: inset 0 0 120px var(--cx-vignette);
+}
+
+/* Codex typography: the gloat-svelte pair after the portal.
+   The technical mono stays in the blueprint lobby. */
+.codex .mono,
+.site-footer .mono,
+.menu-overlay .mono {
+	font-family: var(--f-body);
+	font-weight: 700;
+	letter-spacing: 0.08em;
+}
+
+.codex .section-kicker {
+	font-family: var(--f-serif);
+	font-size: 1.02rem;
+	font-style: italic;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: none;
+}
+
+.codex .btn,
+.codex .filter,
+.codex .project-link {
+	font-family: var(--f-body);
+	font-weight: 700;
+	letter-spacing: 0.06em;
+}
+
+.site-header.is-codex .brand-role,
+.site-header.is-codex .desktop-nav a,
+.site-header.is-codex .header-cta,
+.site-header.is-world .brand-role,
+.site-header.is-world .desktop-nav a,
+.site-header.is-world .header-cta {
+	font-family: var(--f-body);
+	font-weight: 700;
+	letter-spacing: 0.06em;
+}
+
+/* Double gold frame instead of a single minimal hairline. */
+.codex .skill-panel,
+.codex .now-card,
+.codex .contact-form-wrap,
+.codex .soundtrack,
+.codex .project,
+.codex .facts,
+.codex .principles {
+	box-shadow:
+		inset 0 0 0 1px var(--cx-line),
+		inset 0 0 0 5px color-mix(in srgb, var(--cx-gold) 4%, transparent),
+		inset 0 0 0 6px var(--cx-line),
+		0 20px 60px color-mix(in srgb, var(--cx-shadow) 60%, transparent);
+}
+
+.section::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	background-image: var(--cx-noise);
+	opacity: 0.3;
+	mix-blend-mode: soft-light;
+	pointer-events: none;
+}
+
+.section > .container {
+	position: relative;
+	z-index: 1;
+}
+
+.section-kicker {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 1.1rem;
+	color: var(--cx-gold);
+}
+
+.section-kicker::before {
+	content: "";
+	width: 2.2rem;
+	height: 1px;
+	background: currentColor;
+	opacity: 0.65;
+}
+
+.section-head {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 1.1rem;
+	margin-bottom: clamp(2.4rem, 5vw, 4.5rem);
+}
+
+.section-title {
+	max-width: 16ch;
+	font-size: clamp(2.4rem, 6vw, 4.8rem);
+	color: var(--cx-gold);
+	background: linear-gradient(180deg, var(--cx-gold-bright) 4%, var(--cx-gold) 76%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.section-lead {
+	max-width: 60ch;
+	color: var(--cx-muted);
+	font-size: clamp(1rem, 1.2vw, 1.16rem);
+}
+
+.section-index {
+	font-family: var(--f-mono);
+	font-size: 0.7rem;
+	letter-spacing: 0.15em;
+	color: var(--cx-gold);
+}
+
+/* Fine gold rule with a diamond */
+.ornament-rule {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	color: var(--cx-gold);
+	opacity: 0.75;
+}
+
+.ornament-rule::before,
+.ornament-rule::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: currentColor;
+}
+
+.ornament-rule span {
+	width: 0.42rem;
+	height: 0.42rem;
+	border: 1px solid currentColor;
+	transform: rotate(45deg);
+}
+
+/* Reveal on scroll */
+.js [data-reveal] {
+	opacity: 0;
+	transform: translateY(18px);
+	transition:
+		opacity 700ms var(--ease-out),
+		transform 700ms var(--ease-out);
+	transition-delay: var(--reveal-delay, 0ms);
+}
+
+.js [data-reveal].is-visible {
+	opacity: 1;
+	transform: none;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Motion preferences                                                 */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+		scroll-behavior: auto !important;
+	}
+
+	.js [data-reveal] {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (max-width: 720px) {
+	body {
+		font-size: 1rem;
+	}
+
+	.section {
+		scroll-margin-top: 4.2rem;
+	}
+}

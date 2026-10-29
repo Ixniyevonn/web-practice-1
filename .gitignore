@@ -1,0 +1,12 @@
+node_modules
+.svelte-kit
+build
+assets
+artifacts
+task_1.md
+.env
+.env.*
+!.env.example
+*.local
+.DS_Store
+Thumbs.db
