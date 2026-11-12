@@ -113,6 +113,16 @@
 		let current = -1;
 		let lastActive = false;
 		let scrollFrame = 0;
+		let settleFrame = 0;
+		let settling = false;
+		let savedScrollBehavior = "";
+		let lastY = window.scrollY;
+		let direction = 0;
+		let sawScroll = false;
+		let pointerActive = false;
+		let navigationHoldUntil = 0;
+		const SETTLE_MIN = 0.02;
+		const SETTLE_MAX = 0.98;
 		let gl: WebGLRenderingContext | null = null;
 		let program: WebGLProgram | null = null;
 		let uRes: WebGLUniformLocation | null = null;
@@ -246,23 +256,169 @@
 			}
 		};
 
+		/*
+		 * Once a scroll enters the portal we keep the crossing moving in the
+		 * direction the user was already scrolling. The animation starts on
+		 * the scroll event itself — there is no debounce and no scrollend
+		 * wait. Any wheel / touch / key / pointer input stops it instantly;
+		 * the next scroll event resumes from the new position, so input is
+		 * never blocked or overridden.
+		 */
+		const stopSettle = () => {
+			if (!settling) return;
+			settling = false;
+			if (settleFrame) cancelAnimationFrame(settleFrame);
+			settleFrame = 0;
+			root.style.scrollBehavior = savedScrollBehavior;
+		};
+
+		const settlePortal = (info: ReturnType<typeof readPortalScroll>) => {
+			if (settling || reduced || pointerActive || document.visibilityState === "hidden") return;
+			if (performance.now() < navigationHoldUntil) return;
+
+			/* Continue the direction the user was scrolling instead of
+			   reversing against their gesture. At a dead stop, pick the
+			   nearest side. */
+			const towardEnd = direction > 0 || (direction === 0 && info.progress >= 0.5);
+			const target = towardEnd ? info.end : info.begin;
+			const start = window.scrollY;
+			const distance = target - start;
+
+			if (Math.abs(distance) < 2) {
+				window.scrollTo(0, target);
+				setProgress(target === info.end ? 1 : 0);
+				return;
+			}
+
+			settling = true;
+			savedScrollBehavior = root.style.scrollBehavior;
+			root.style.scrollBehavior = "auto";
+
+			/* Starts at zero speed and accelerates the whole way, so the
+			   hand-off from the user's gesture feels continuous. */
+			const duration = Math.min(1300, Math.max(450, Math.abs(distance) * 0.8));
+			let startedAt = 0;
+			let expectedY = start;
+
+			const tick = (now: number) => {
+				if (!settling) return;
+
+				/* If something outside this animation moved the page (scrollbar
+				   drag, browser find, etc.), yield immediately. */
+				if (Math.abs(window.scrollY - expectedY) > 3) {
+					stopSettle();
+					return;
+				}
+
+				if (!startedAt) startedAt = now;
+				const t = Math.min(1, (now - startedAt) / duration);
+				const eased = t * t * (1.5 - 0.5 * t);
+				expectedY = start + distance * eased;
+				window.scrollTo(0, expectedY);
+
+				if (t < 1) {
+					settleFrame = requestAnimationFrame(tick);
+					return;
+				}
+
+				window.scrollTo(0, target);
+				settleFrame = 0;
+				settling = false;
+				root.style.scrollBehavior = savedScrollBehavior;
+				setProgress(target === info.end ? 1 : 0);
+			};
+
+			settleFrame = requestAnimationFrame(tick);
+		};
+
 		const update = () => {
 			scrollFrame = 0;
-			setProgress(reduced ? 0 : readPortalScroll().progress);
+
+			const y = window.scrollY;
+			if (Math.abs(y - lastY) > 0.5) direction = y > lastY ? 1 : -1;
+			lastY = y;
+
+			if (reduced) {
+				setProgress(0);
+				return;
+			}
+
+			const info = readPortalScroll();
+			setProgress(info.progress);
+
+			if (
+				sawScroll &&
+				!settling &&
+				!pointerActive &&
+				performance.now() >= navigationHoldUntil &&
+				info.progress > SETTLE_MIN &&
+				info.progress < SETTLE_MAX
+			) {
+				settlePortal(info);
+			}
 		};
 
 		const schedule = () => {
 			if (!scrollFrame) scrollFrame = requestAnimationFrame(update);
 		};
 
+		const onScroll = () => {
+			sawScroll = true;
+			schedule();
+		};
+
+		const onUserInput = () => {
+			navigationHoldUntil = 0;
+			stopSettle();
+		};
+
+		const onPointerDown = () => {
+			pointerActive = true;
+			onUserInput();
+		};
+
+		const onPointerUp = () => {
+			pointerActive = false;
+		};
+
+		/* Safety net for touch / scrollbar releases where no final scroll
+		   event arrives. Wheel and keyboard input already starts the settle
+		   from their scroll event, so this does not delay them. */
+		const onScrollEnd = () => {
+			if (!settling) schedule();
+		};
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (
+				[" ", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)
+			) {
+				onUserInput();
+			}
+		};
+
+		const onNavigationClick = (event: MouseEvent) => {
+			const element = event.target as Element | null;
+			if (!element?.closest?.('a[href^="#"]')) return;
+			/* Let the browser's anchor scroll finish without the settle
+			   animation trying to choose a portal side mid-flight. */
+			navigationHoldUntil = performance.now() + 3000;
+			stopSettle();
+		};
+
 		const onLayoutChange = () => {
+			stopSettle();
 			invalidatePortalScroll();
 			schedule();
 		};
 
 		const onVisibility = () => {
-			if (document.visibilityState === "hidden") stopDraw();
-			else if (lastActive) startDraw();
+			if (document.visibilityState === "hidden") {
+				stopSettle();
+				stopDraw();
+			} else {
+				if (lastActive) startDraw();
+				schedule();
+			}
 		};
 
 		const ok = initWebGL();
@@ -275,17 +431,42 @@
 		observer.observe(document.body);
 		document.fonts?.ready.then(onLayoutChange);
 
-		window.addEventListener("scroll", schedule, { passive: true });
+		window.addEventListener("scroll", onScroll, { passive: true });
+		window.addEventListener("scrollend", onScrollEnd, { passive: true });
 		window.addEventListener("resize", onLayoutChange, { passive: true });
+		window.addEventListener("wheel", onUserInput, { passive: true });
+		window.addEventListener("touchstart", onPointerDown, { passive: true });
+		window.addEventListener("touchmove", onUserInput, { passive: true });
+		window.addEventListener("touchend", onPointerUp, { passive: true });
+		window.addEventListener("touchcancel", onPointerUp, { passive: true });
+		window.addEventListener("pointerdown", onPointerDown, { passive: true });
+		window.addEventListener("pointerup", onPointerUp, { passive: true });
+		window.addEventListener("pointercancel", onPointerUp, { passive: true });
+		window.addEventListener("click", onNavigationClick, { passive: true });
+		window.addEventListener("popstate", onUserInput, { passive: true });
+		window.addEventListener("keydown", onKeyDown, { passive: true });
 		document.addEventListener("visibilitychange", onVisibility);
 		if (ok) resize();
 
 		return () => {
 			observer.disconnect();
-			window.removeEventListener("scroll", schedule);
+			window.removeEventListener("scroll", onScroll);
+			window.removeEventListener("scrollend", onScrollEnd);
 			window.removeEventListener("resize", onLayoutChange);
+			window.removeEventListener("wheel", onUserInput);
+			window.removeEventListener("touchstart", onPointerDown);
+			window.removeEventListener("touchmove", onUserInput);
+			window.removeEventListener("touchend", onPointerUp);
+			window.removeEventListener("touchcancel", onPointerUp);
+			window.removeEventListener("pointerdown", onPointerDown);
+			window.removeEventListener("pointerup", onPointerUp);
+			window.removeEventListener("pointercancel", onPointerUp);
+			window.removeEventListener("click", onNavigationClick);
+			window.removeEventListener("popstate", onUserInput);
+			window.removeEventListener("keydown", onKeyDown);
 			document.removeEventListener("visibilitychange", onVisibility);
 			if (scrollFrame) cancelAnimationFrame(scrollFrame);
+			stopSettle();
 			stopDraw();
 			root.classList.remove("portal-active");
 			for (const target of targets) {
