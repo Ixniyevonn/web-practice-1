@@ -10,7 +10,7 @@ export interface Project {
 	role: string;
 	status: string;
 	category: ProjectCategory;
-	cover: "niheria" | "portfolio" | "obsidian" | "gamejam";
+	cover: "niheria" | "portfolio" | "obsidian" | "mermaid" | "dieget" | "ethos";
 	href: string;
 	linkLabel: string;
 	featured?: boolean;
@@ -72,8 +72,8 @@ export const projects: Project[] = [
 		title: "Злорадство Нихерии",
 		subtitle: "Вики и инструменты для ролевого мира",
 		description:
-			"Многостраничная платформа для ролевого проекта: статьи, персонажи, карты, календарь и мастерские инструменты. SvelteKit, TypeScript, PostgreSQL, Drizzle ORM. Роль — фулстек: от схемы данных до интерфейсов и анимаций.",
-		stack: ["SvelteKit", "TypeScript", "PostgreSQL", "Drizzle"],
+			"Многостраничная платформа для ролевого проекта: статьи, персонажи, интерактивные карты, календарь, медиа и мастерские инструменты. SvelteKit, TypeScript, Bun, PostgreSQL, Drizzle ORM и Zod; вход через Telegram OIDC, деплой на Linux через Nginx, systemd и CI/CD. Роль — фулстек: от схемы данных до интерфейсов и анимаций.",
+		stack: ["SvelteKit", "TypeScript", "Bun", "PostgreSQL", "Drizzle ORM", "Zod"],
 		role: "фулстек",
 		status: "личный проект / в развитии",
 		category: "web",
@@ -98,32 +98,60 @@ export const projects: Project[] = [
 		linkLabel: "Репозиторий"
 	},
 	{
-		id: "obsidian",
-		title: "Obsidian: личные плагины",
-		subtitle: "Инструменты для собственной вики",
+		id: "viewpoint",
+		title: "Viewpoint",
+		subtitle: "Плагин Obsidian для многомерных миров",
 		description:
-			"Экспериментальные плагины для Obsidian: инструменты для личной вики и заметок. TypeScript, Obsidian API, CodeMirror 6. Роль — разработка и UX. Публичные ссылки появятся позже.",
-		stack: ["TypeScript", "Obsidian API", "CodeMirror 6"],
-		role: "разработка",
-		status: "пет-проект / в разработке",
+			"Граф связанных заметок с измерениями, группами, спектрами и направленными связями: переключение измерения перестраивает раскладку, сохраняя заметки и их роли. TypeScript, Svelte 5, Vite, js-yaml и Obsidian API. Роль — дизайн и разработка; публичные релизы.",
+		stack: ["TypeScript", "Svelte 5", "Vite", "Obsidian API", "Bun"],
+		role: "дизайн + разработка",
+		status: "публичный плагин / v1.7.2",
 		category: "tools",
 		cover: "obsidian",
-		href: "https://github.com/Ixniyevonn",
+		href: "https://github.com/Ixniyevonn/obsidian-viewpoint",
 		linkLabel: "GitHub"
 	},
 	{
-		id: "gamejam",
-		title: "Game Jam Prototype",
-		subtitle: "Играбельный прототип за выходные",
+		id: "mermaid",
+		title: "Mermaid Inspector",
+		subtitle: "Интерактивные Mermaid-схемы в Obsidian",
 		description:
-			"Командные прототипы для геймджемов. Unity / C# и Godot / GDScript. Названия, роли и ссылки появятся после публикации.",
-		stack: ["Unity", "C#", "Godot", "GDScript"],
-		role: "командная работа",
-		status: "командный / учебный",
+			"Плагин открывает .mmd как иерархическую схему: подграфы сворачиваются, фокус, панорамирование и зум работают без растрирования, переходы анимируются по SVG. TypeScript, Svelte 5, Mermaid, Obsidian API и Bun.",
+		stack: ["TypeScript", "Svelte 5", "Mermaid", "SVG", "Bun"],
+		role: "разработка",
+		status: "публичный плагин / v0.1.8",
 		category: "tools",
-		cover: "gamejam",
-		href: "https://github.com/Ixniyevonn",
+		cover: "mermaid",
+		href: "https://github.com/Ixniyevonn/obsidian-mermaid-inspector",
 		linkLabel: "GitHub"
+	},
+	{
+		id: "dieget",
+		title: "Dieget",
+		subtitle: "Движок интерактивной прозы",
+		description:
+			"Кроссплатформенный движок для интерактивной литературы: Jai, Sokol и Clay, сборка под Windows/D3D11 и WebAssembly/WebGL2, рантайм-поток, горячая перезагрузка контента и пакеты с Markdown и Mermaid. Роль — архитектура и разработка.",
+		stack: ["Jai", "Sokol", "Clay", "WASM", "Emscripten"],
+		role: "архитектура + разработка",
+		status: "личный R&D / прототип",
+		category: "tools",
+		cover: "dieget",
+		href: "#contact",
+		linkLabel: "Написать о проекте"
+	},
+	{
+		id: "ethos",
+		title: "Ethos: Within Arcs",
+		subtitle: "Партийная RPG с симуляцией этногенеза",
+		description:
+			"Долгий личный проект: симуляция этногенеза, партийная RPG и собственный движок на Jai/Sokol после прототипа на Godot/C#. Системы мира, моды и материалы по рендерингу; роль — гейм-дизайн и разработка.",
+		stack: ["Jai", "Sokol", "Godot", "C#", "GDScript"],
+		role: "гейм-дизайн + разработка",
+		status: "личный проект / в разработке",
+		category: "tools",
+		cover: "ethos",
+		href: "#contact",
+		linkLabel: "Написать о проекте"
 	}
 ];
 
@@ -135,7 +163,7 @@ export const mainSkills: Skill[] = [
 	{ name: "PostgreSQL", level: "working" },
 	{ name: "Unity / C#", level: "working", note: "геймдев" },
 	{ name: "Godot / GDScript", level: "working", note: "геймдев" },
-	{ name: "Jai", level: "learning", note: "изучаю" },
+	{ name: "Jai", level: "working", note: "движки и инструменты" },
 	{ name: "Game design", level: "working", note: "геймдев" },
 	{ name: "Git / GitHub", level: "working" }
 ];
@@ -151,19 +179,20 @@ export const skillGroups: SkillGroup[] = [
 			{ name: "JavaScript", level: "core" },
 			{ name: "TypeScript", level: "core" },
 			{ name: "SvelteKit", level: "core" },
+			{ name: "Svelte 5 / Runes", level: "core" },
 			{ name: "Next.js", level: "working" },
 			{ name: "React", level: "working" },
-			{ name: "Node.js / Bun", level: "working" },
+			{ name: "Bun", level: "working", note: "рантайм и инструменты" },
+			{ name: "Node.js", level: "working" },
 			{ name: "REST / API", level: "working" },
+			{ name: "OAuth / OIDC + Telegram", level: "working" },
 			{ name: "PostgreSQL / SQL", level: "working" },
-			{ name: "Drizzle ORM", level: "working" },
+			{ name: "Drizzle ORM / Zod", level: "working" },
 			{ name: "Tailwind / CSS-архитектура", level: "working" },
 			{ name: "CSS / SVG / Canvas / WebGL", level: "working" },
 			{ name: "Доступность", level: "working" },
-			{ name: "Тесты", level: "learning" },
-			{ name: "Git / GitHub Actions", level: "working" },
+			{ name: "CI/CD и Linux-деплой", level: "working" },
 			{ name: "Docker", level: "learning" },
-			{ name: "Linux", level: "working" },
 			{ name: "Vite", level: "working" }
 		]
 	},
@@ -175,7 +204,12 @@ export const skillGroups: SkillGroup[] = [
 		skills: [
 			{ name: "Unity / C#", level: "working" },
 			{ name: "Godot / GDScript", level: "working" },
-			{ name: "Jai", level: "learning" },
+			{ name: "Godot / C#", level: "working" },
+			{ name: "Jai", level: "working", note: "движки и инструменты" },
+			{ name: "Sokol / Clay", level: "working" },
+			{ name: "WASM / Emscripten", level: "working" },
+			{ name: "Движки / системная архитектура", level: "working" },
+			{ name: "Моддинг / плагины", level: "working" },
 			{ name: "Гейм-дизайн", level: "working" },
 			{ name: "Level design", level: "working" },
 			{ name: "Шейдеры HLSL / GLSL", level: "learning" },
@@ -192,7 +226,9 @@ export const skillGroups: SkillGroup[] = [
 			{ name: "Git / GitHub", level: "working" },
 			{ name: "Figma", level: "working" },
 			{ name: "Photoshop", level: "working" },
-			{ name: "Obsidian API / TypeScript", level: "working" },
+			{ name: "Obsidian API / плагины", level: "working" },
+			{ name: "Win32 / нативные приложения", level: "working" },
+			{ name: "Прикладная криптография", level: "working" },
 			{ name: "VS Code / Zed", level: "working" },
 			{ name: "Ableton Live", level: "working" }
 		]
@@ -208,7 +244,6 @@ export const skillGroups: SkillGroup[] = [
 			{ name: "Визуальная композиция", level: "working" },
 			{ name: "Нарратив / worldbuilding", level: "working" },
 			{ name: "Продуктовое мышление", level: "working" },
-			{ name: "Документация", level: "working" },
 			{ name: "Командная работа", level: "working" },
 			{ name: "Самостоятельность", level: "working" },
 			{ name: "Креативность", level: "working" }
