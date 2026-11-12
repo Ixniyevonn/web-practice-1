@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from "$app/environment";
 	import { profile } from "$lib/content";
-	import { goToTop } from "$lib/portal-scroll";
+	import { scrollToHash } from "$lib/portal-scroll";
 	import Icon from "./Icon.svelte";
 	import RuneRing from "./RuneRing.svelte";
 	import ThemeToggle from "./ThemeToggle.svelte";
@@ -29,6 +29,12 @@
 				document.querySelector<HTMLButtonElement>(".menu-btn")?.focus();
 			});
 		}
+	}
+
+	function navigate(href: string) {
+		close();
+		/* Let the menu unlock the page before the anchor scroll starts. */
+		requestAnimationFrame(() => scrollToHash(href));
 	}
 
 	function onkeydown(event: KeyboardEvent) {
@@ -101,8 +107,8 @@
 				<a
 					href={link.href}
 					onclick={(event) => {
-						if (link.href === "#top") goToTop(event);
-						close();
+						event.preventDefault();
+						navigate(link.href);
 					}}
 				>
 					<span class="menu-index mono">{link.index}</span>

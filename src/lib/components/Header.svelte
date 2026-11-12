@@ -6,7 +6,7 @@
 	import ThemeToggle from "./ThemeToggle.svelte";
 	import { initTheme } from "$lib/theme.svelte";
 	import { profile } from "$lib/content";
-	import { goToTop, readPortalScroll } from "$lib/portal-scroll";
+	import { readPortalScroll, scrollToHash } from "$lib/portal-scroll";
 
 	let menuOpen = $state(false);
 	let scrolled = $state(false);
@@ -73,7 +73,15 @@
 	class:is-world={worldMode}
 >
 	<div class="header-inner">
-		<a class="brand" href="#top" aria-label="{profile.name} — на главную" onclick={goToTop}>
+		<a
+			class="brand"
+			href="#top"
+			aria-label="{profile.name} — на главную"
+			onclick={(event) => {
+				event.preventDefault();
+				scrollToHash("#top");
+			}}
+		>
 			<span class="monogram" aria-hidden="true">{profile.monogram}</span>
 			<span class="brand-text">
 				<span class="brand-name">{profile.name}</span>
@@ -86,7 +94,8 @@
 				<a
 					href={item.href === "#contact" ? contactHref : item.href}
 					onclick={(event) => {
-						if (item.href === "#top") goToTop(event);
+						event.preventDefault();
+						scrollToHash(item.href === "#contact" ? contactHref : item.href);
 					}}>{item.label}</a
 				>
 			{/each}
@@ -94,7 +103,14 @@
 
 		<div class="header-actions">
 			<ThemeToggle compact />
-			<a class="header-cta mono" href={contactHref}>Написать</a>
+			<a
+				class="header-cta mono"
+				href={contactHref}
+				onclick={(event) => {
+					event.preventDefault();
+					scrollToHash(contactHref);
+				}}>Написать</a
+			>
 			<button
 				type="button"
 				class="menu-btn"

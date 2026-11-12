@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
 	import { onMount } from "svelte";
 	import Icon from "./Icon.svelte";
 	import RuneRing from "./RuneRing.svelte";
-	import { readPortalScroll } from "$lib/portal-scroll";
+	import {
+		invalidatePortalScroll,
+		readPortalScroll,
+		refreshPortalScroll
+	} from "$lib/portal-scroll";
 
 	let overlay = $state<HTMLDivElement | null>(null);
 	let canvas = $state<HTMLCanvasElement | null>(null);
-	let progress = $state(0);
 	let active = $state(false);
 	let webglFailed = $state(false);
-	let rewinding = $state(false);
 
 	const vertexSource = `
 		attribute vec2 a_position;
@@ -19,6 +20,12 @@
 		}
 	`;
 
+	/*
+	 * The star field is deliberately cheap: a capped canvas resolution, one
+	 * noise lookup and a small fixed particle count. The portal is decorative,
+	 * so a 1440px-wide buffer upscaled by CSS looks identical and leaves the
+	 * main thread alone.
+	 */
 	const fragmentSource = `
 		precision mediump float;
 
@@ -49,10 +56,9 @@
 			float t = u_time;
 
 			float n = noise(uv * 4.0 + vec2(0.0, -t * 0.025));
-			float n2 = noise(uv * 9.0 + vec2(t * 0.018, 0.0));
 
 			float glow = 0.0;
-			for (int i = 0; i < 30; i++) {
+			for (int i = 0; i < 16; i++) {
 				float fi = float(i);
 				float seed = hash(vec2(fi, 7.13));
 				float speed = 0.018 + seed * 0.055;
@@ -61,285 +67,45 @@
 					fract(seed * 9.7 + t * speed) * 2.5 - 1.25
 				);
 				float d = length(p - pos);
-				float twinkle = 0.4 + 0.6 * hash(vec2(fi, floor(t * 2.4)));
-				float spark = smoothstep(0.010, 0.0, d) * twinkle;
-				glow += spark;
+				float twinkle = 0.45 + 0.55 * hash(vec2(fi, floor(t * 2.0)));
+				glow += smoothstep(0.010, 0.0, d) * twinkle;
 			}
 
 			float radial = exp(-length(p) * 2.15);
-			vec3 gold = vec3(0.90, 0.62, 0.32);
-			vec3 lightGold = vec3(1.0, 0.82, 0.56);
-			vec3 col = mix(gold, lightGold, n2) * (glow * 1.8 + radial * 0.05 * (0.3 + n * 0.7));
+			vec3 gold = mix(vec3(0.90, 0.62, 0.32), vec3(1.0, 0.82, 0.56), n);
 
 			float fadeIn = smoothstep(0.0, 0.22, u_progress);
 			float fadeOut = 1.0 - smoothstep(0.82, 1.0, u_progress) * 0.45;
 			float alpha = (glow * 0.95 + radial * 0.07) * fadeIn * fadeOut;
 
-			gl_FragColor = vec4(col, alpha);
+			gl_FragColor = vec4(gold, alpha);
 		}
 	`;
 
 	onMount(() => {
 		const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		const root = document.documentElement;
+		/* The portal value is written to the three affected sections instead of
+		   <html>. Custom properties inherit, so a root-level write would force a
+		   style recalculation for the entire 15 000px page on every frame. */
+		const targets = [
+			document.querySelector<HTMLElement>(".hero"),
+			document.querySelector<HTMLElement>("#web-contact"),
+			document.querySelector<HTMLElement>("#about")
+		].filter((element): element is HTMLElement => Boolean(element));
 		let frame = 0;
-		let rewindFrame = 0;
-		let finishFrame = 0;
-		let finishing = false;
-		let finishDone = false;
-		let lastProgress = -1;
-		let lensStep = -1;
-		let assemblyTimer = 0;
-		let assembled = false;
+		let running = false;
+		let startedAt = 0;
+		let current = -1;
+		let lastActive = false;
+		let lastChromatic = false;
+		let scrollFrame = 0;
 		let gl: WebGLRenderingContext | null = null;
 		let program: WebGLProgram | null = null;
 		let uRes: WebGLUniformLocation | null = null;
 		let uTime: WebGLUniformLocation | null = null;
 		let uProgress: WebGLUniformLocation | null = null;
 		let buffer: WebGLBuffer | null = null;
-		let start = performance.now();
-
-		/* A real radial displacement map for the fish-eye. It is generated once
-		   and stretched by feImage to the filtered section. */
-		const lensMap = document.getElementById("portal-lens-map") as SVGImageElement | null;
-		const lensDisp = ["portal-lens-r", "portal-lens-b"].map((id) => document.getElementById(id));
-		const lensBase = {
-			lobby: [230, 350],
-			codex: [70, 110]
-		};
-		let lensTarget: "lobby" | "codex" = "lobby";
-		let viewportMapUrl = "";
-		let codexMapUrl = "";
-
-		const makeLensMap = (centerY: number) => {
-			const size = 160;
-			const canvasMap = document.createElement("canvas");
-			canvasMap.width = size;
-			canvasMap.height = size;
-			const context = canvasMap.getContext("2d");
-			if (!context) return "";
-			const image = context.createImageData(size, size);
-			for (let y = 0; y < size; y++) {
-				for (let x = 0; x < size; x++) {
-					const u = (x / (size - 1)) * 2 - 1;
-					const yNorm = y / (size - 1);
-					const v =
-						yNorm < centerY
-							? (yNorm - centerY) / Math.max(centerY, 0.001)
-							: (yNorm - centerY) / Math.max(1 - centerY, 0.001);
-					const r = Math.sqrt(u * u + v * v);
-					const falloff = r >= 1 ? 0 : Math.pow(1 - r, 1.35);
-					const dx = -u * falloff;
-					const dy = -v * falloff;
-					const i = (y * size + x) * 4;
-					image.data[i] = Math.round((dx * 0.5 + 0.5) * 255);
-					image.data[i + 1] = Math.round((dy * 0.5 + 0.5) * 255);
-					image.data[i + 2] = 128;
-					image.data[i + 3] = 255;
-				}
-			}
-			context.putImageData(image, 0, 0);
-			return canvasMap.toDataURL("image/png");
-		};
-
-		const applyLensMap = (target: "lobby" | "codex") => {
-			if (!lensMap) return;
-			lensTarget = target;
-			const codexHead = document.querySelector<HTMLElement>(".about .section-head");
-			const width =
-				target === "codex" && codexHead ? codexHead.offsetWidth : window.innerWidth;
-			const height =
-				target === "codex" && codexHead ? codexHead.offsetHeight : window.innerHeight;
-			lensMap.setAttribute("href", target === "codex" ? codexMapUrl : viewportMapUrl);
-			lensMap.setAttribute("width", String(width));
-			lensMap.setAttribute("height", String(height));
-		};
-
-		const buildLensMap = () => {
-			viewportMapUrl = makeLensMap(0.5);
-			codexMapUrl = makeLensMap(0.5);
-			applyLensMap("lobby");
-		};
-
-		const setLens = (p: number) => {
-			const lobbyOn = p > 0.07 && p < 0.45;
-			const formLens = lobbyOn && !rewinding;
-			const heroLens = lobbyOn && rewinding;
-			const codexOn = !rewinding && p > 0.58 && p < 0.97;
-			root.classList.toggle("portal-lensing", formLens);
-			root.classList.toggle("portal-hero-lens", heroLens);
-			root.classList.toggle("portal-emerging", codexOn);
-
-			let strength = 0;
-			if (lobbyOn) strength = Math.min(1, Math.max(0, (p - 0.08) / 0.17));
-			else if (codexOn) strength = Math.min(1, Math.max(0, (0.96 - p) / 0.2));
-
-			const target = codexOn ? "codex" : "lobby";
-			if ((lobbyOn || codexOn) && target !== lensTarget) {
-				applyLensMap(target);
-				lensStep = -1;
-			}
-
-			const step = Math.round(strength * 10) / 10;
-			if (step === lensStep) return;
-			lensStep = step;
-			const base = lensBase[target];
-			lensDisp.forEach((element, index) => {
-				element?.setAttribute("scale", String(base[index] * step));
-			});
-		};
-
-		buildLensMap();
-
-		const playAssembly = () => {
-			if (assembled) return;
-			assembled = true;
-			const codex = document.querySelector<HTMLElement>(".codex");
-			if (!codex) return;
-			document
-				.querySelectorAll<HTMLElement>("#about [data-reveal]")
-				.forEach((element) => element.classList.add("is-visible"));
-			codex.classList.add("is-assembling");
-			window.clearTimeout(assemblyTimer);
-			assemblyTimer = window.setTimeout(() => {
-				codex.classList.remove("is-assembling");
-			}, 1800);
-		};
-
-		const setProgress = (next: number) => {
-			progress = next;
-			active = next > 0.001 && next < 0.999;
-			root.classList.toggle("portal-active", active);
-			root.style.setProperty("--portal-p", String(next));
-			overlay?.style.setProperty("--p", String(next));
-			setLens(next);
-
-			if (next > 0.95) playAssembly();
-			if (next < 0.08 && assembled) {
-				assembled = false;
-				document.querySelector<HTMLElement>(".codex")?.classList.remove("is-assembling");
-			}
-		};
-
-		const blockScroll = (event: Event) => event.preventDefault();
-		const blockKeys = (event: KeyboardEvent) => {
-			if ([" ", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) {
-				event.preventDefault();
-			}
-		};
-		const unlockScroll = () => {
-			window.removeEventListener("wheel", blockScroll);
-			window.removeEventListener("touchmove", blockScroll);
-			window.removeEventListener("keydown", blockKeys);
-		};
-
-		/* Once the portal reaches the new world, freeze the page and play the
-		   reveal on a clock. The codex section is pinned with one fixed
-		   transform, so nothing can jitter while the user's scroll is blocked. */
-		const finishReveal = (info: ReturnType<typeof readPortalScroll>) => {
-			if (finishing || rewinding || reduced) return;
-			finishing = true;
-			const startP = Math.min(0.92, Math.max(0.55, info.progress));
-			const naturalTop = info.aboutTop - window.scrollY;
-			const target = info.headerOffset + 8;
-			root.classList.add("portal-revealing", "portal-finishing");
-			root.style.setProperty("--about-shift", `${target - naturalTop}px`);
-			root.style.setProperty("--reveal", "0");
-			document
-				.querySelectorAll<HTMLElement>("#about [data-reveal]")
-				.forEach((element) => element.classList.add("is-visible"));
-			window.addEventListener("wheel", blockScroll, { passive: false });
-			window.addEventListener("touchmove", blockScroll, { passive: false });
-			window.addEventListener("keydown", blockKeys, { passive: false });
-
-			const duration = 1200;
-			const started = { at: 0 };
-			const tick = (now: number) => {
-				if (!finishing) {
-					unlockScroll();
-					return;
-				}
-				if (!started.at) started.at = now;
-				const t = Math.min(1, (now - started.at) / duration);
-				const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-				setProgress(startP + (1 - startP) * eased);
-				root.style.setProperty("--reveal", String(Math.min(1, t / 0.55)));
-				if (t < 1) {
-					finishFrame = requestAnimationFrame(tick);
-					return;
-				}
-				window.scrollTo({ top: info.end, left: 0, behavior: "instant" });
-				root.classList.remove("portal-revealing", "portal-finishing");
-				root.style.setProperty("--about-shift", "0px");
-				root.style.setProperty("--reveal", "1");
-				finishing = false;
-				finishDone = true;
-				lastProgress = 1;
-				setProgress(1);
-				unlockScroll();
-			};
-			finishFrame = requestAnimationFrame(tick);
-		};
-
-		const updateScroll = () => {
-			if (rewinding || finishing) return;
-			if (reduced) {
-				setProgress(0);
-				return;
-			}
-			const info = readPortalScroll();
-			setProgress(info.progress);
-			if (lastProgress < 0) {
-				lastProgress = info.progress;
-				return;
-			}
-			if (info.progress < 0.5) finishDone = false;
-			if (!finishDone && info.progress >= 0.55 && info.progress > lastProgress) {
-				finishReveal(info);
-			}
-			lastProgress = info.progress;
-		};
-
-		const playRewind = () => {
-			if (reduced) {
-				window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-				return;
-			}
-			if (rewinding || finishing) return;
-			rewinding = true;
-			overlay?.classList.add("rewinding");
-			setProgress(1);
-			window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-			const started = { at: 0 };
-			const duration = 1500;
-			const tick = (now: number) => {
-				if (!rewinding) return;
-				if (!started.at) started.at = now;
-				const t = Math.min(1, (now - started.at) / duration);
-				const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-				setProgress(1 - eased);
-				if (t < 1) {
-					rewindFrame = requestAnimationFrame(tick);
-				} else {
-					rewinding = false;
-					overlay?.classList.remove("rewinding");
-					setProgress(0);
-					updateScroll();
-				}
-			};
-			// Let the jump to the top paint under the opaque veil first.
-			rewindFrame = requestAnimationFrame(() => {
-				rewindFrame = requestAnimationFrame(tick);
-			});
-		};
-
-		const cancelRewind = () => {
-			if (!rewinding) return;
-			cancelAnimationFrame(rewindFrame);
-			rewinding = false;
-			overlay?.classList.remove("rewinding");
-			updateScroll();
-		};
 
 		const compile = (type: number, source: string) => {
 			if (!gl) return null;
@@ -359,7 +125,9 @@
 			gl = (canvas.getContext("webgl", {
 				alpha: true,
 				antialias: false,
-				premultipliedAlpha: false
+				premultipliedAlpha: false,
+				depth: false,
+				stencil: false
 			}) ?? canvas.getContext("experimental-webgl")) as WebGLRenderingContext | null;
 			if (!gl) return false;
 
@@ -397,66 +165,118 @@
 
 		const resize = () => {
 			if (!canvas || !gl) return;
-			const dpr = Math.min(window.devicePixelRatio || 1, 2);
-			const width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-			const height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
-			if (canvas.width !== width || canvas.height !== height) {
-				canvas.width = width;
-				canvas.height = height;
-				gl.viewport(0, 0, width, height);
+			const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+			const width = Math.max(1, canvas.clientWidth);
+			const height = Math.max(1, canvas.clientHeight);
+			const scale = Math.min(1, 1440 / Math.max(width, height));
+			const bufferWidth = Math.max(1, Math.round(width * dpr * scale));
+			const bufferHeight = Math.max(1, Math.round(height * dpr * scale));
+			if (canvas.width !== bufferWidth || canvas.height !== bufferHeight) {
+				canvas.width = bufferWidth;
+				canvas.height = bufferHeight;
+				gl.viewport(0, 0, bufferWidth, bufferHeight);
 			}
 		};
 
 		const draw = (now: number) => {
+			if (!running) return;
 			frame = requestAnimationFrame(draw);
-			if (!active || !canvas || !gl || !program) return;
+			if (!canvas || !gl || !program) return;
 			if (document.visibilityState === "hidden") return;
+
 			resize();
 			gl.clear(gl.COLOR_BUFFER_BIT);
 			gl.useProgram(program);
 			if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
-			if (uTime) gl.uniform1f(uTime, (now - start) / 1000);
-			if (uProgress) gl.uniform1f(uProgress, progress);
+			if (uTime) gl.uniform1f(uTime, (now - startedAt) / 1000);
+			if (uProgress) gl.uniform1f(uProgress, Math.max(0, current));
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
 		};
 
-		const onRewind = () => playRewind();
-		const onResize = () => {
-			applyLensMap(lensTarget);
-			updateScroll();
+		const startDraw = () => {
+			if (running || !gl || reduced) return;
+			running = true;
+			if (!startedAt) startedAt = performance.now();
+			frame = requestAnimationFrame(draw);
+		};
+
+		const stopDraw = () => {
+			running = false;
+			if (frame) cancelAnimationFrame(frame);
+			frame = 0;
+		};
+
+		/* Writes are limited to one custom property and a class that changes
+		   only twice per crossing. Svelte state is not touched on every frame. */
+		const setProgress = (next: number) => {
+			const p = Math.min(1, Math.max(0, next));
+			if (Math.abs(p - current) < 0.0001) return;
+			current = p;
+			const value = p.toFixed(4);
+			for (const target of targets) target.style.setProperty("--portal-p", value);
+			overlay?.style.setProperty("--p", value);
+
+			const nextActive = p > 0.001 && p < 0.999;
+			if (nextActive !== lastActive) {
+				lastActive = nextActive;
+				active = nextActive;
+				root.classList.toggle("portal-active", nextActive);
+				if (nextActive) startDraw();
+				else stopDraw();
+			}
+
+			/* A static red/cyan text fringe is far cheaper than warping the
+			   page through an SVG displacement filter. It only toggles twice. */
+			const nextChromatic = p > 0.02 && p < 0.95;
+			if (nextChromatic !== lastChromatic) {
+				lastChromatic = nextChromatic;
+				root.classList.toggle("portal-chromatic", nextChromatic);
+			}
+		};
+
+		const update = () => {
+			scrollFrame = 0;
+			setProgress(reduced ? 0 : readPortalScroll().progress);
+		};
+
+		const schedule = () => {
+			if (!scrollFrame) scrollFrame = requestAnimationFrame(update);
+		};
+
+		const onLayoutChange = () => {
+			invalidatePortalScroll();
+			schedule();
+		};
+
+		const onVisibility = () => {
+			if (document.visibilityState === "hidden") stopDraw();
+			else if (lastActive) startDraw();
 		};
 
 		const ok = initWebGL();
 		webglFailed = !ok;
 
-		updateScroll();
-		window.addEventListener("scroll", updateScroll, { passive: true });
-		window.addEventListener("resize", onResize, { passive: true });
-		window.addEventListener("portal:rewind", onRewind);
-		window.addEventListener("wheel", cancelRewind, { passive: true });
-		window.addEventListener("touchstart", cancelRewind, { passive: true });
-		if (ok && !reduced) frame = requestAnimationFrame(draw);
+		refreshPortalScroll();
+		update();
+
+		const observer = new ResizeObserver(onLayoutChange);
+		observer.observe(document.body);
+		document.fonts?.ready.then(onLayoutChange);
+
+		window.addEventListener("scroll", schedule, { passive: true });
+		window.addEventListener("resize", onLayoutChange, { passive: true });
+		document.addEventListener("visibilitychange", onVisibility);
 		if (ok) resize();
 
 		return () => {
-			window.removeEventListener("scroll", updateScroll);
-			window.removeEventListener("resize", onResize);
-			window.removeEventListener("portal:rewind", onRewind);
-			window.removeEventListener("wheel", cancelRewind);
-			window.removeEventListener("touchstart", cancelRewind);
-			if (frame) cancelAnimationFrame(frame);
-			if (rewindFrame) cancelAnimationFrame(rewindFrame);
-			if (finishFrame) cancelAnimationFrame(finishFrame);
-			unlockScroll();
-			window.clearTimeout(assemblyTimer);
-			root.classList.remove(
-				"portal-crumbling",
-				"portal-lensing",
-				"portal-hero-lens",
-				"portal-emerging",
-				"portal-revealing"
-			);
-			document.querySelector<HTMLElement>(".codex")?.classList.remove("is-assembling");
+			observer.disconnect();
+			window.removeEventListener("scroll", schedule);
+			window.removeEventListener("resize", onLayoutChange);
+			document.removeEventListener("visibilitychange", onVisibility);
+			if (scrollFrame) cancelAnimationFrame(scrollFrame);
+			stopDraw();
+			root.classList.remove("portal-active", "portal-chromatic");
+			for (const target of targets) target.style.removeProperty("--portal-p");
 			if (gl) {
 				if (buffer) gl.deleteBuffer(buffer);
 				if (program) gl.deleteProgram(program);
@@ -468,15 +288,22 @@
 <div
 	class="portal-overlay"
 	class:active
-	class:rewinding
 	bind:this={overlay}
-	style={`--p:${progress}`}
 	aria-hidden={!active}
 	inert={!active}
 >
 	<div class="portal-night" aria-hidden="true"></div>
 	<canvas class="portal-canvas" class:failed={webglFailed} bind:this={canvas} aria-hidden="true"></canvas>
 	<div class="portal-fallback" class:hidden={!webglFailed} aria-hidden="true"></div>
+
+	<div class="portal-glow" aria-hidden="true"></div>
+
+	<div class="portal-ring portal-ring-chroma portal-ring-red" aria-hidden="true">
+		<RuneRing runes={28} />
+	</div>
+	<div class="portal-ring portal-ring-chroma portal-ring-cyan" aria-hidden="true">
+		<RuneRing runes={28} />
+	</div>
 
 	<div class="portal-ring" aria-hidden="true">
 		<RuneRing runes={28} />
@@ -487,81 +314,21 @@
 	<span class="portal-core" aria-hidden="true"></span>
 
 	<a class="portal-skip mono" href="#about">
-		Пропустить переход
+		Перейти к кодексу
 		<Icon name="arrow-down" size={14} />
 	</a>
 
 	<span class="portal-edge" aria-hidden="true"></span>
 </div>
 
-<svg class="portal-lens-defs" aria-hidden="true" focusable="false">
-	<defs>
-		<filter
-			id="portal-fisheye"
-			x="0"
-			y="0"
-			width="100%"
-			height="100%"
-			color-interpolation-filters="sRGB"
-		>
-			<feImage
-				id="portal-lens-map"
-				result="map"
-				x="0"
-				y="0"
-				preserveAspectRatio="none"
-			/>
-			<feColorMatrix
-				in="SourceGraphic"
-				type="matrix"
-				values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-				result="chR"
-			/>
-			<feColorMatrix
-				in="SourceGraphic"
-				type="matrix"
-				values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-				result="chG"
-			/>
-			<feColorMatrix
-				in="SourceGraphic"
-				type="matrix"
-				values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-				result="chB"
-			/>
-			<feDisplacementMap
-				id="portal-lens-r"
-				in="chR"
-				in2="map"
-				scale="0"
-				xChannelSelector="R"
-				yChannelSelector="G"
-				result="dR"
-			/>
-			<feDisplacementMap
-				id="portal-lens-b"
-				in="chB"
-				in2="map"
-				scale="0"
-				xChannelSelector="R"
-				yChannelSelector="G"
-				result="dB"
-			/>
-			<feBlend mode="screen" in="dR" in2="chG" result="rg" />
-			<feBlend mode="screen" in="rg" in2="dB" />
-		</filter>
-	</defs>
-</svg>
-
 <style>
 	.portal-overlay {
 		--q: min(1, calc(var(--p) * 2));
-		--ring-in: clamp(0, calc((var(--p) - 0.06) * 5), 1);
+		--ring-in: clamp(0, calc((var(--p) - 0.04) * 6), 1);
 		--in: clamp(0, calc(var(--p) * 12), 1);
 		--out: clamp(0, calc((1 - var(--p)) * 7.14), 1);
 		--night-in: min(0.5, clamp(0, calc((var(--p) - 0.08) * 4), 1));
 		--night-out: clamp(0, calc((0.7 - var(--p)) * 4), 1);
-		--night-rewind: clamp(0, calc((var(--p) - 0.06) * 3), 1);
 		position: fixed;
 		inset: 0;
 		z-index: 115;
@@ -573,22 +340,6 @@
 
 	.portal-overlay.active {
 		visibility: visible;
-	}
-
-	/* While the reverse animation runs the overlay is fully opaque, even at
-	   p = 1 where the normal fade-out would hide it. */
-	.portal-overlay.rewinding {
-		visibility: visible;
-		opacity: 1;
-	}
-
-	.portal-overlay.rewinding .portal-night {
-		opacity: var(--night-rewind);
-	}
-
-	.portal-overlay.rewinding .portal-skip {
-		opacity: 0;
-		pointer-events: none;
 	}
 
 	.portal-night {
@@ -615,14 +366,6 @@
 		opacity: var(--p);
 	}
 
-	.portal-lens-defs {
-		position: absolute;
-		width: 0;
-		height: 0;
-		overflow: hidden;
-		pointer-events: none;
-	}
-
 	.portal-canvas,
 	.portal-fallback {
 		position: absolute;
@@ -631,7 +374,6 @@
 		width: 100%;
 		height: 100%;
 		pointer-events: none;
-		mix-blend-mode: screen;
 	}
 
 	.portal-canvas.failed {
@@ -650,6 +392,25 @@
 		display: none;
 	}
 
+	.portal-glow {
+		position: absolute;
+		z-index: 2;
+		top: 50%;
+		left: 50%;
+		width: min(96vmin, 1000px);
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background: radial-gradient(
+			circle,
+			rgba(228, 180, 114, 0.14),
+			rgba(228, 180, 114, 0.05) 38%,
+			transparent 68%
+		);
+		opacity: calc(var(--ring-in) * (0.35 + var(--p) * 0.65));
+		transform: translate(-50%, -50%) scale(calc(0.82 + var(--p) * 0.28));
+		pointer-events: none;
+	}
+
 	.portal-ring {
 		position: absolute;
 		z-index: 4;
@@ -657,13 +418,10 @@
 		left: 50%;
 		width: min(112vmin, 1200px);
 		aspect-ratio: 1;
-		color: rgb(
-			calc(109 + 119 * var(--q)) calc(148 + 32 * var(--q)) calc(255 - 141 * var(--q))
-		);
+		color: var(--portal-gold);
 		opacity: calc(var(--ring-in) * (0.4 + var(--p) * 0.6));
 		transform: translate(-50%, -50%) scale(calc(0.94 + var(--p) * 0.06))
 			rotate(calc(var(--p) * 230deg));
-		filter: drop-shadow(0 0 calc(8px + var(--p) * 32px) rgba(228, 180, 114, 0.45));
 		pointer-events: none;
 	}
 
@@ -674,7 +432,28 @@
 		opacity: calc(var(--ring-in) * (0.18 + var(--p) * 0.5));
 		transform: translate(-50%, -50%) scale(calc(0.96 + var(--p) * 0.04))
 			rotate(calc(var(--p) * -170deg));
-		filter: drop-shadow(0 0 calc(6px + var(--p) * 16px) rgba(228, 180, 114, 0.3));
+	}
+
+	/* Two offset, tinted copies of the outer ring. Duplicated vector layers
+	   are composited with a transform, which is much cheaper than a
+	   full-screen SVG displacement/blend filter. */
+	.portal-ring-chroma {
+		--split: 0px;
+		z-index: 3;
+		opacity: calc(var(--ring-in) * (0.28 + var(--p) * 0.4));
+		mix-blend-mode: screen;
+		transform: translate(calc(-50% + var(--split)), -50%)
+			scale(calc(0.94 + var(--p) * 0.06)) rotate(calc(var(--p) * 230deg));
+	}
+
+	.portal-ring-red {
+		--split: -4px;
+		color: #ff4b5c;
+	}
+
+	.portal-ring-cyan {
+		--split: 4px;
+		color: #4fe8ff;
 	}
 
 	.portal-core {
@@ -707,7 +486,6 @@
 		padding: 0.65rem 0.85rem;
 		border: 1px solid rgba(228, 180, 114, 0.32);
 		background: rgba(8, 6, 4, 0.38);
-		backdrop-filter: blur(8px);
 		color: #e4b472;
 		font-size: 0.68rem;
 		opacity: 0.85;

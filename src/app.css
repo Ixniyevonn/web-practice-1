@@ -366,6 +366,19 @@ hr {
 	box-shadow: inset 0 0 140px rgba(0, 0, 0, 0.68);
 }
 
+/* On small screens the lobby scrolls away instead of staying pinned, so the
+   runway starts right under the light sheet. Fade its top into the lobby
+   background to avoid a hard horizontal seam while the veil opens. */
+.portal-spacer::before {
+	content: "";
+	position: absolute;
+	inset: 0 0 auto;
+	height: 14rem;
+	background: linear-gradient(to bottom, var(--bp-bg), transparent);
+	opacity: 0.75;
+	pointer-events: none;
+}
+
 @media (min-width: 901px) and (min-height: 720px) {
 	.lobby-stage {
 		height: 250svh;
@@ -378,61 +391,61 @@ hr {
 	}
 }
 
-/* The light lobby is a real fish-eye lens: a radial SVG displacement filter
-   warps it with chromatic fringing while the veil closes over it. No circle,
-   no hard edge. */
-/* The lobby's own opacity is driven by the portal progress, so it stays
-   dissolved after the lens filter is switched off. */
+/* The lobby dissolves under the portal veil. Every value below is a pure
+   function of --portal-p, which RunePortal writes once per scroll frame.
+   Only opacity and transform animate, so the whole crossing stays on the
+   compositor and needs no SVG displacement filters or extra animation clock. */
 .web-contact {
-	opacity: clamp(0, calc((0.4 - var(--portal-p, 0)) / 0.1), 1);
+	opacity: clamp(0, calc((0.42 - var(--portal-p, 0)) / 0.14), 1);
 }
 
 .hero {
-	opacity: clamp(0, calc((0.46 - var(--portal-p, 0)) / 0.25), 1);
-	transform: scale(calc(1 + clamp(0, calc((0.46 - var(--portal-p, 0)) / 0.25), 1) * 0.02));
+	opacity: clamp(0, calc((0.5 - var(--portal-p, 0)) / 0.26), 1);
+	transform: scale(
+		calc(1 + clamp(0, calc((var(--portal-p, 0) - 0.08) / 0.42), 1) * 0.02)
+	);
 }
 
 html.portal-active .web-contact {
 	pointer-events: none;
 }
 
-html.portal-lensing .web-contact {
-	filter: url(#portal-fisheye);
-}
-
-html.portal-hero-lens .hero {
-	filter: url(#portal-fisheye);
-}
-
-html.portal-emerging .about .section-head {
-	filter: url(#portal-fisheye);
-	will-change: filter;
-}
-
-/* The codex's first screen is held in its final position while the portal
-   reveals it; only its opacity and the lens change. */
-.about {
-	opacity: clamp(0, calc((var(--portal-p, 0) - 0.6) / 0.12), 1);
-}
-
-html.portal-revealing .about {
-	opacity: var(--reveal, 1);
-	transform: translate3d(0, var(--about-shift, 0px), 0);
-	will-change: transform, opacity;
-}
-
-html.portal-lensing .web-contact .container {
-	transform: scale(calc(1 + clamp(0, calc((var(--portal-p, 0) - 0.1) / 0.3), 1) * 0.04));
+.web-contact .container {
+	transform: scale(calc(1 + clamp(0, calc((var(--portal-p, 0) - 0.1) / 0.32), 1) * 0.045));
 	transform-origin: 50% 50%;
 }
 
-@media (max-width: 900px) {
-	/* The unpinned lobby sheet dissolves instead of ending in a hard edge. */
-	html.portal-lensing .web-contact {
-		-webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
-		mask-image: linear-gradient(to bottom, #000 72%, transparent 100%);
-		filter: none;
-	}
+/* The first codex screen fades in while the veil clears. There is no scroll
+   lock, no transform and no second animation clock: leaving the portal is
+   still ordinary scrolling, in either direction. */
+.about {
+	opacity: clamp(0, calc((var(--portal-p, 0) - 0.56) / 0.16), 1);
+}
+
+html.portal-active .hero,
+html.portal-active .web-contact,
+html.portal-active .web-contact .container {
+	will-change: transform, opacity;
+}
+
+html.portal-active .about {
+	will-change: opacity;
+}
+
+/* Cheap chromatic fringing: the red/cyan offsets are rasterised once when
+   the portal opens, instead of rebuilding an SVG displacement filter on
+   every scroll frame. */
+.web-contact,
+.about {
+	transition: text-shadow 500ms var(--ease-out);
+}
+
+html.portal-chromatic .hero,
+html.portal-chromatic .web-contact,
+html.portal-chromatic .about {
+	text-shadow:
+		calc(-1 * max(1px, 0.035em)) 0 0 rgba(255, 52, 92, 0.35),
+		max(1px, 0.035em) 0 0 rgba(64, 226, 255, 0.35);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -445,85 +458,13 @@ html.portal-lensing .web-contact .container {
 	}
 
 	.web-contact,
+	.web-contact .container,
 	.hero,
 	.about {
 		opacity: 1;
 		transform: none;
 		pointer-events: auto;
-	}
-
-	html.portal-lensing .web-contact,
-	html.portal-hero-lens .hero,
-	html.portal-lensing .web-contact .container,
-	html.portal-emerging .about .section-head {
-		filter: none;
-		opacity: 1;
-		transform: none;
-		mask-image: none;
-		-webkit-mask-image: none;
-		pointer-events: auto;
-	}
-}
-
-/* The codex assembles when the portal has opened. */
-.codex.is-assembling .about .section-head {
-	animation: codex-assemble 850ms var(--ease-out) both;
-}
-
-.codex.is-assembling .about-portrait {
-	animation: codex-assemble-left 950ms 70ms var(--ease-out) both;
-}
-
-.codex.is-assembling .about-copy {
-	animation: codex-assemble-right 950ms 140ms var(--ease-out) both;
-}
-
-.codex.is-assembling .facts {
-	animation: codex-assemble 850ms 220ms var(--ease-out) both;
-}
-
-.codex.is-assembling .principles {
-	animation: codex-assemble 850ms 300ms var(--ease-out) both;
-}
-
-@keyframes codex-assemble {
-	from {
-		opacity: 0;
-		transform: translateY(26px) scale(0.985);
-		filter: blur(6px);
-		clip-path: inset(0 0 100% 0);
-	}
-	to {
-		opacity: 1;
-		transform: none;
-		filter: none;
-		clip-path: inset(0);
-	}
-}
-
-@keyframes codex-assemble-left {
-	from {
-		opacity: 0;
-		transform: translateX(-26px) rotate(-1deg);
-		filter: blur(6px);
-	}
-	to {
-		opacity: 1;
-		transform: none;
-		filter: none;
-	}
-}
-
-@keyframes codex-assemble-right {
-	from {
-		opacity: 0;
-		transform: translateX(26px);
-		filter: blur(6px);
-	}
-	to {
-		opacity: 1;
-		transform: none;
-		filter: none;
+		will-change: auto;
 	}
 }
 

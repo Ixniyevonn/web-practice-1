@@ -68,7 +68,6 @@
 		position: relative;
 		padding-block: clamp(3.5rem, 7vw, 6rem);
 		overflow: hidden;
-		border-top: 1px solid var(--bp-line);
 		border-bottom: 1px solid var(--bp-line);
 		background: var(--bp-bg);
 		color: var(--bp-ink);

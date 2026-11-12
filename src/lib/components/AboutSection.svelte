@@ -117,6 +117,7 @@
 	.about {
 		position: relative;
 		background:
+			linear-gradient(to bottom, var(--cx-bg) 0, transparent 8rem),
 			radial-gradient(ellipse 50% 40% at 0% 0%, var(--cx-glow), transparent 70%),
 			var(--cx-bg);
 	}

@@ -136,9 +136,7 @@
 		transition:
 			background-color var(--dur) var(--ease-out),
 			color var(--dur) var(--ease-out),
-			filter 900ms var(--ease-out),
-			transform 1100ms var(--ease-out),
-			opacity 800ms var(--ease-out);
+			text-shadow 500ms var(--ease-out);
 		transform-origin: 50% 50%;
 	}
 
