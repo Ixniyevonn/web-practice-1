@@ -152,6 +152,9 @@
 		overflow: hidden;
 		border: 1px solid var(--cx-line-strong);
 		background: var(--cx-panel);
+		box-shadow:
+			calc(var(--ca, 0) * -4px) 0 0 rgba(255, 52, 92, 0.55),
+			calc(var(--ca, 0) * 4px) 0 0 rgba(64, 226, 255, 0.55);
 	}
 
 	.portrait-frame picture,

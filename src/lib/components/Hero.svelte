@@ -135,8 +135,7 @@
 		color: var(--bp-ink);
 		transition:
 			background-color var(--dur) var(--ease-out),
-			color var(--dur) var(--ease-out),
-			text-shadow 500ms var(--ease-out);
+			color var(--dur) var(--ease-out);
 		transform-origin: 50% 50%;
 	}
 

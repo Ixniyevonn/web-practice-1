@@ -183,12 +183,35 @@
 	}
 
 	.web-form-wrap {
+		position: relative;
 		padding: clamp(1.2rem, 2.6vw, 1.8rem);
 		border: 1px solid var(--bp-line-strong);
 		background: var(--bp-panel);
 		box-shadow:
 			inset 0 0 0 1px var(--bp-line),
 			0 18px 50px var(--bp-shadow);
+	}
+
+	/* Red/cyan outlines follow --ca from the portal controller, so the whole
+	   panel picks up the same fringe as its text while the portal is near. */
+	.web-form-wrap::before,
+	.web-form-wrap::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border: 1px solid transparent;
+		opacity: calc(var(--ca, 0) * 0.85);
+		pointer-events: none;
+	}
+
+	.web-form-wrap::before {
+		border-color: #ff345c;
+		transform: translateX(calc(var(--ca, 0) * -4px));
+	}
+
+	.web-form-wrap::after {
+		border-color: #40e2ff;
+		transform: translateX(calc(var(--ca, 0) * 4px));
 	}
 
 	.form-head {

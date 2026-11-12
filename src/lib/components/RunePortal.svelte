@@ -82,23 +82,36 @@
 		}
 	`;
 
+	const smoothstep = (value: number) => {
+		const t = Math.min(1, Math.max(0, value));
+		return t * t * (3 - 2 * t);
+	};
+
+	/* 0 at both ends of the range, 1 at the peak. */
+	const hump = (p: number, start: number, peak: number, end: number) => {
+		if (p <= start || p >= end) return 0;
+		const t = p < peak ? (p - start) / (peak - start) : (end - p) / (end - peak);
+		return smoothstep(t);
+	};
+
 	onMount(() => {
 		const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		const root = document.documentElement;
 		/* The portal value is written to the three affected sections instead of
 		   <html>. Custom properties inherit, so a root-level write would force a
 		   style recalculation for the entire 15 000px page on every frame. */
+		const web = document.querySelector<HTMLElement>("#web-contact");
+		const about = document.querySelector<HTMLElement>("#about");
 		const targets = [
 			document.querySelector<HTMLElement>(".hero"),
-			document.querySelector<HTMLElement>("#web-contact"),
-			document.querySelector<HTMLElement>("#about")
+			web,
+			about
 		].filter((element): element is HTMLElement => Boolean(element));
 		let frame = 0;
 		let running = false;
 		let startedAt = 0;
 		let current = -1;
 		let lastActive = false;
-		let lastChromatic = false;
 		let scrollFrame = 0;
 		let gl: WebGLRenderingContext | null = null;
 		let program: WebGLProgram | null = null;
@@ -216,6 +229,13 @@
 			for (const target of targets) target.style.setProperty("--portal-p", value);
 			overlay?.style.setProperty("--p", value);
 
+			/* Chromatic aberration belongs to the two frames that meet the
+			   portal. Each one ramps up while it approaches the veil and back
+			   down while it leaves, so the fringe is never on at rest. */
+			web?.style.setProperty("--ca", hump(p, 0.02, 0.23, 0.43).toFixed(3));
+			about?.style.setProperty("--ca", hump(p, 0.55, 0.76, 0.99).toFixed(3));
+			overlay?.style.setProperty("--ca", Math.sin(Math.PI * p).toFixed(3));
+
 			const nextActive = p > 0.001 && p < 0.999;
 			if (nextActive !== lastActive) {
 				lastActive = nextActive;
@@ -223,14 +243,6 @@
 				root.classList.toggle("portal-active", nextActive);
 				if (nextActive) startDraw();
 				else stopDraw();
-			}
-
-			/* A static red/cyan text fringe is far cheaper than warping the
-			   page through an SVG displacement filter. It only toggles twice. */
-			const nextChromatic = p > 0.02 && p < 0.95;
-			if (nextChromatic !== lastChromatic) {
-				lastChromatic = nextChromatic;
-				root.classList.toggle("portal-chromatic", nextChromatic);
 			}
 		};
 
@@ -275,8 +287,12 @@
 			document.removeEventListener("visibilitychange", onVisibility);
 			if (scrollFrame) cancelAnimationFrame(scrollFrame);
 			stopDraw();
-			root.classList.remove("portal-active", "portal-chromatic");
-			for (const target of targets) target.style.removeProperty("--portal-p");
+			root.classList.remove("portal-active");
+			for (const target of targets) {
+				target.style.removeProperty("--portal-p");
+				target.style.removeProperty("--ca");
+			}
+			overlay?.style.removeProperty("--ca");
 			if (gl) {
 				if (buffer) gl.deleteBuffer(buffer);
 				if (program) gl.deleteProgram(program);
@@ -438,21 +454,20 @@
 	   are composited with a transform, which is much cheaper than a
 	   full-screen SVG displacement/blend filter. */
 	.portal-ring-chroma {
-		--split: 0px;
 		z-index: 3;
-		opacity: calc(var(--ring-in) * (0.28 + var(--p) * 0.4));
+		opacity: calc(var(--ring-in) * (0.25 + var(--ca, 0) * 0.45));
 		mix-blend-mode: screen;
-		transform: translate(calc(-50% + var(--split)), -50%)
+		transform: translate(calc(-50% + var(--split, 0px)), -50%)
 			scale(calc(0.94 + var(--p) * 0.06)) rotate(calc(var(--p) * 230deg));
 	}
 
 	.portal-ring-red {
-		--split: -4px;
+		--split: calc(var(--ca, 0) * -4px);
 		color: #ff4b5c;
 	}
 
 	.portal-ring-cyan {
-		--split: 4px;
+		--split: calc(var(--ca, 0) * 4px);
 		color: #4fe8ff;
 	}
 

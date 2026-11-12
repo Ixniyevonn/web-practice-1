@@ -432,20 +432,16 @@ html.portal-active .about {
 	will-change: opacity;
 }
 
-/* Cheap chromatic fringing: the red/cyan offsets are rasterised once when
-   the portal opens, instead of rebuilding an SVG displacement filter on
-   every scroll frame. */
+/* The two frames on either side of the portal get a red/cyan split that
+   follows --ca (0 at rest, 1 where each frame meets the veil). Moving text
+   shadows are far cheaper than warping a section through an SVG filter. */
 .web-contact,
 .about {
-	transition: text-shadow 500ms var(--ease-out);
-}
-
-html.portal-chromatic .hero,
-html.portal-chromatic .web-contact,
-html.portal-chromatic .about {
 	text-shadow:
-		calc(-1 * max(1px, 0.035em)) 0 0 rgba(255, 52, 92, 0.35),
-		max(1px, 0.035em) 0 0 rgba(64, 226, 255, 0.35);
+		calc(-1 * var(--ca, 0) * max(1px, 0.035em)) 0 0
+			rgb(255 52 92 / calc(var(--ca, 0) * 0.38)),
+		calc(var(--ca, 0) * max(1px, 0.035em)) 0 0
+			rgb(64 226 255 / calc(var(--ca, 0) * 0.38));
 }
 
 @media (prefers-reduced-motion: reduce) {
