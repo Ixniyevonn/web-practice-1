@@ -18,7 +18,7 @@
 
 	function isWide(project: (typeof projects)[number]): boolean {
 		if (active === "web") return !project.featured;
-		if (active === "all") return project.id === "gamejam";
+		if (active === "all") return project.id === "ethos";
 		return false;
 	}
 </script>
@@ -34,7 +34,7 @@
 			title="Работы"
 			id="works-title"
 			rune={32}
-			lead="Четыре карточки: два веб-проекта и два инструмента / игровых прототипа. Часть описаний — честные заготовки: проекты ещё в разработке, ссылки появятся позже."
+			lead="Шесть карточек: два веб-проекта и четыре инструмента / игровых проекта. У публичных плагинов есть ссылки, личные проекты подписаны в статусе."
 		/>
 
 		<div class="works-toolbar" data-reveal>
