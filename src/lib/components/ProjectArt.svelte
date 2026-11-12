@@ -4,7 +4,7 @@
 	let {
 		variant,
 		class: className = ""
-	}: { variant: "niheria" | "portfolio" | "obsidian" | "gamejam"; class?: string } = $props();
+	}: { variant: "niheria" | "portfolio" | "obsidian" | "mermaid" | "dieget" | "ethos"; class?: string } = $props();
 </script>
 
 <div class="art {variant} {className}" aria-hidden="true">
@@ -117,40 +117,130 @@
 				<path d="M196 152v-24M342 236h24M612 168v-24M516 360v24" />
 			</g>
 		</svg>
+	{:else if variant === "mermaid"}
+		<svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice">
+			<defs>
+				<linearGradient id="mm-bg" x1="0" y1="0" x2="1" y2="1">
+					<stop offset="0%" stop-color="var(--cx-panel)" />
+					<stop offset="100%" stop-color="var(--cx-bg-deep)" />
+				</linearGradient>
+				<radialGradient id="mm-glow" cx="62%" cy="34%" r="55%">
+					<stop offset="0%" stop-color="#57c6b2" stop-opacity="0.2" />
+					<stop offset="100%" stop-color="#57c6b2" stop-opacity="0" />
+				</radialGradient>
+			</defs>
+			<rect width="800" height="520" fill="url(#mm-bg)" />
+			<rect width="800" height="520" fill="url(#mm-glow)" />
+			<g stroke="var(--cx-line)" stroke-width="1" opacity="0.55">
+				<path d="M0 104h800M0 416h800" />
+				<path d="M120 0v520M680 0v520" />
+			</g>
+			<g fill="none" stroke="#57c6b2" stroke-width="1.2" opacity="0.55">
+				<rect x="112" y="86" width="238" height="150" stroke-dasharray="5 7" />
+				<rect x="438" y="264" width="250" height="158" stroke-dasharray="5 7" />
+				<path d="M350 148h70l58 58M350 188h118l32 32M350 224h64l58 40" />
+				<path d="M564 264v-46h118" />
+			</g>
+			<g fill="#57c6b2">
+				<rect x="156" y="124" width="58" height="30" rx="2" />
+				<rect x="238" y="124" width="74" height="30" rx="2" opacity="0.72" />
+				<rect x="156" y="184" width="92" height="26" rx="2" opacity="0.55" />
+				<rect x="482" y="312" width="72" height="28" rx="2" />
+				<rect x="574" y="312" width="78" height="28" rx="2" opacity="0.7" />
+			</g>
+			<g fill="var(--cx-ink)" font-family="monospace">
+				<text x="36" y="68" font-size="24" font-weight="700" letter-spacing="-1">MERMAID</text>
+				<text x="36" y="88" font-size="11" opacity="0.55">COLLAPSE / FOCUS / ZOOM</text>
+			</g>
+			<g fill="none" stroke="var(--cx-gold)" opacity="0.6">
+				<path d="M664 58h92v86" />
+				<path d="M52 462h92v-86" />
+			</g>
+		</svg>
+	{:else if variant === "dieget"}
+		<svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice">
+			<defs>
+				<linearGradient id="dg-bg" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stop-color="var(--cx-panel)" />
+					<stop offset="100%" stop-color="var(--cx-bg-deep)" />
+				</linearGradient>
+				<radialGradient id="dg-glow" cx="74%" cy="26%" r="52%">
+					<stop offset="0%" stop-color="#8b7cf6" stop-opacity="0.24" />
+					<stop offset="100%" stop-color="#8b7cf6" stop-opacity="0" />
+				</radialGradient>
+			</defs>
+			<rect width="800" height="520" fill="url(#dg-bg)" />
+			<rect width="800" height="520" fill="url(#dg-glow)" />
+			<g fill="none" stroke="var(--cx-gold)" opacity="0.5">
+				<rect x="92" y="66" width="616" height="388" />
+				<path d="M92 118h616M92 402h616" />
+				<path d="M136 154h312M136 180h246M136 206h286M136 232h210" opacity="0.45" />
+				<path d="M136 286h378M136 312h318M136 338h344M136 364h264" opacity="0.3" />
+			</g>
+			<g fill="var(--cx-ink)" font-family="serif">
+				<text x="136" y="102" font-size="34" font-weight="700" letter-spacing="-1">Dieget</text>
+				<text x="496" y="100" font-size="11" font-family="monospace" opacity="0.55">JAI · SOKOL · WASM</text>
+			</g>
+			<g stroke="#8b7cf6" stroke-width="1" fill="none" opacity="0.75">
+				<path d="M590 226v128M620 206v148M650 250v104" />
+				<circle cx="620" cy="280" r="62" stroke-dasharray="4 10" opacity="0.5" />
+				<circle cx="620" cy="280" r="34" opacity="0.75" />
+			</g>
+			<g fill="#8b7cf6">
+				<circle cx="620" cy="280" r="5" />
+				<circle cx="590" cy="226" r="3" opacity="0.7" />
+				<circle cx="650" cy="250" r="3" opacity="0.7" />
+				<circle cx="590" cy="354" r="3" opacity="0.5" />
+			</g>
+			<g fill="var(--cx-gold)" opacity="0.7">
+				<rect x="136" y="430" width="54" height="2" />
+				<rect x="200" y="430" width="24" height="2" opacity="0.5" />
+				<rect x="234" y="430" width="12" height="2" opacity="0.3" />
+			</g>
+		</svg>
 	{:else}
 		<svg viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice">
 			<defs>
-				<linearGradient id="gj-sky" x1="0" y1="0" x2="0" y2="1">
+				<linearGradient id="et-bg" x1="0" y1="0" x2="0" y2="1">
 					<stop offset="0%" stop-color="#0b1012" />
 					<stop offset="100%" stop-color="#17140d" />
 				</linearGradient>
-				<linearGradient id="gj-ground" x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stop-color="#1d2b29" />
-					<stop offset="100%" stop-color="#0a0d0c" />
-				</linearGradient>
+				<radialGradient id="et-glow" cx="72%" cy="28%" r="48%">
+					<stop offset="0%" stop-color="#e4b472" stop-opacity="0.24" />
+					<stop offset="100%" stop-color="#e4b472" stop-opacity="0" />
+				</radialGradient>
 			</defs>
-			<rect width="800" height="520" fill="url(#gj-sky)" />
-			<circle cx="612" cy="128" r="58" fill="var(--cx-gold)" opacity="0.16" />
-			<circle cx="612" cy="128" r="28" fill="var(--cx-gold)" opacity="0.72" />
-			<path d="M0 330 120 276l92 34 108-52 96 38 132-60 108 46 144-28v266H0Z" fill="url(#gj-ground)" />
-			<path d="M0 384 96 350l114 22 92-34 122 30 94-20 116 24 166-34v182H0Z" fill="#090c0b" />
-			<g stroke="var(--cx-gold)" fill="none" opacity="0.5">
-				<path d="M400 132v256M272 260h256" />
-				<circle cx="400" cy="260" r="82" stroke-dasharray="4 10" />
-				<path d="M400 196l64 64-64 64-64-64Z" fill="var(--cx-gold)" fill-opacity="0.12" />
+			<rect width="800" height="520" fill="url(#et-bg)" />
+			<rect width="800" height="520" fill="url(#et-glow)" />
+			<path d="M0 336 112 286l96 32 104-54 92 42 116-58 104 44 130-28 46 18v238H0Z" fill="#0a0d0c" />
+			<path d="M0 390 90 358l116 20 96-32 120 30 96-20 118 24 164-32v172H0Z" fill="#080a09" />
+			<g fill="none" stroke="var(--cx-gold)" opacity="0.55">
+				<circle cx="278" cy="252" r="104" stroke-dasharray="5 9" />
+				<circle cx="278" cy="252" r="62" />
+				<path d="M278 148v208M174 252h208M204 178l148 148M352 178 204 326" opacity="0.5" />
 			</g>
-			<g fill="#57c6b2" opacity="0.85">
-				<rect x="620" y="356" width="8" height="8" />
-				<rect x="638" y="356" width="8" height="8" opacity="0.5" />
-				<rect x="656" y="356" width="8" height="8" opacity="0.25" />
-				<rect x="620" y="374" width="8" height="8" opacity="0.35" />
+			<g stroke="#57c6b2" stroke-width="1" opacity="0.7">
+				<path d="M278 252 420 186 548 232 612 146M420 186 470 310 548 232M278 252 176 352M470 310 620 362" />
+			</g>
+			<g fill="#57c6b2">
+				<circle cx="278" cy="252" r="7" />
+				<circle cx="420" cy="186" r="5" opacity="0.8" />
+				<circle cx="548" cy="232" r="4" opacity="0.6" />
+				<circle cx="612" cy="146" r="5" opacity="0.9" />
+				<circle cx="470" cy="310" r="6" />
+				<circle cx="176" cy="352" r="4" opacity="0.5" />
+				<circle cx="620" cy="362" r="4" opacity="0.5" />
+			</g>
+			<g fill="var(--cx-ink)" font-family="monospace">
+				<text x="36" y="72" font-size="24" font-weight="700" letter-spacing="-1">ETHOS</text>
+				<text x="36" y="92" font-size="11" opacity="0.55">WITHIN ARCS / ETHNOGENESIS</text>
 			</g>
 			<g stroke="var(--cx-gold)" opacity="0.35">
-				<path d="M64 112h112M64 128h68M624 112h112M668 128h68" />
+				<path d="M616 62h120M676 76h60M64 458h112M64 472h68" />
 			</g>
-			<g fill="#d46655" opacity="0.75">
-				<rect x="520" y="72" width="46" height="2" />
-				<rect x="548" y="80" width="18" height="2" opacity="0.5" />
+			<g fill="#d46655" opacity="0.7">
+				<rect x="520" y="78" width="46" height="2" />
+				<rect x="548" y="86" width="18" height="2" opacity="0.5" />
 			</g>
 		</svg>
 	{/if}
